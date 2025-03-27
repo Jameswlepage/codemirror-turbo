@@ -30,12 +30,21 @@ importers:
         specifier: ^6.5.5
         version: 6.5.10
       '@codemirror/state':
-        specifier: ^6.4.0
+        specifier: 6.5.2
         version: 6.5.2
       '@codemirror/view':
         specifier: ^6.24.1
         version: 6.36.4
+      '@lezer/highlight':
+        specifier: ^1.2.1
+        version: 1.2.1
       '@uiw/codemirror-theme-tokyo-night':
+        specifier: ^4.23.10
+        version: 4.23.10(@codemirror/language@6.11.0)(@codemirror/state@6.5.2)(@codemirror/view@6.36.4)
+      '@uiw/codemirror-theme-tokyo-night-day':
+        specifier: ^4.23.10
+        version: 4.23.10(@codemirror/language@6.11.0)(@codemirror/state@6.5.2)(@codemirror/view@6.36.4)
+      '@uiw/codemirror-themes':
         specifier: ^4.23.10
         version: 4.23.10(@codemirror/language@6.11.0)(@codemirror/state@6.5.2)(@codemirror/view@6.36.4)
       codemirror:
@@ -415,6 +424,9 @@ packages:
 
   '@types/serve-static@1.15.7':
     resolution: {integrity: sha512-W8Ym+h8nhuRwaKPaDw34QUkwsGi6Rc4yYqvKFo5rm2FUEhCFbzVWrxXUxuKK8TASjWsysJY0nsmNCGhCOIsrOw==}
+
+  '@uiw/codemirror-theme-tokyo-night-day@4.23.10':
+    resolution: {integrity: sha512-fGa05Pv3oWY799UyWUvv1ug/DM0Z0O6J14aPt6jewVe6MOJd9JHcMZ2tVm35k+wCNwQuflHDM1Z5EfT//004BA==}
 
   '@uiw/codemirror-theme-tokyo-night@4.23.10':
     resolution: {integrity: sha512-SXPU+E1uJiJMdhtCHf2FiPqUPWjAckFaeUF3TP6iP7oyoU4wFzBTfzNFSztaRnpnmsY4igRrqMLQGwTUtWdByQ==}
@@ -1190,6 +1202,14 @@ snapshots:
       '@types/http-errors': 2.0.4
       '@types/node': 20.17.27
       '@types/send': 0.17.4
+
+  '@uiw/codemirror-theme-tokyo-night-day@4.23.10(@codemirror/language@6.11.0)(@codemirror/state@6.5.2)(@codemirror/view@6.36.4)':
+    dependencies:
+      '@uiw/codemirror-themes': 4.23.10(@codemirror/language@6.11.0)(@codemirror/state@6.5.2)(@codemirror/view@6.36.4)
+    transitivePeerDependencies:
+      - '@codemirror/language'
+      - '@codemirror/state'
+      - '@codemirror/view'
 
   '@uiw/codemirror-theme-tokyo-night@4.23.10(@codemirror/language@6.11.0)(@codemirror/state@6.5.2)(@codemirror/view@6.36.4)':
     dependencies:

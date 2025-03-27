@@ -1,7 +1,8 @@
-export * from "./inline-edit.js";
-export * from "./inline-completion.js";
-export * from "./state.js";
-export * from "./theme.js";
-export * from "./trigger.js";
-export * from "./commands.js";
-export * from "./autocomplete.js";
+export * from "./inline-edit";
+export * from "./inline-completion";
+export * from "./state";
+export { createInitialTheme, applyTheme, darkTheme, lightTheme } from "./theme/index";
+export * from "./trigger";
+export * from "./commands";
+export { aiAutocomplete } from "./autocomplete";
+export { aiExtension } from "./inline-edit";

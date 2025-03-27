@@ -25,9 +25,9 @@ import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { searchKeymap, highlightSelectionMatches } from "@codemirror/search";
 import { autocompletion, completionKeymap, closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
 import { lintKeymap } from "@codemirror/lint";
-import { aiExtension } from "../src/inline-edit";
-import { aiAutocomplete } from "../src/autocomplete";
-import { tokyoNight, tokyoNightInit } from '@uiw/codemirror-theme-tokyo-night';
+import { aiExtension } from "../src/inline-edit.js";
+import { aiAutocomplete } from "../src/autocomplete.js";
+import { darkTheme, lightTheme, aiTheme, applyTheme } from "../src/theme/index.js";
 
 const logger = console;
 
@@ -185,16 +185,15 @@ document.addEventListener('DOMContentLoaded', () => {
   // Create model selector
   createModelSelector();
 
+  const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  const theme = isDark ? darkTheme : lightTheme;
+
   const extensions = [
     basicSetup,
     python(),
     javascript(),
-    tokyoNightInit({
-      settings: {
-        fontFamily: 'JetBrains Mono, monospace',
-        lineHighlight: '#292e42',
-      }
-    }),
+    theme,
+    aiTheme,
     EditorView.theme({
       "&": {
         fontSize: "14px",
@@ -277,7 +276,7 @@ document.addEventListener('DOMContentLoaded', () => {
       },
       autocompleteDebounceTime: 300,
       enableAutocomplete: true,
-    })
+    }),
   ];
 
   const startState = EditorState.create({
@@ -330,5 +329,11 @@ function calculateStats(numbers) {
   const view = new EditorView({
     state: startState,
     parent: editorElement
+  });
+
+  // Theme switching logic
+  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)");
+  prefersDark.addEventListener("change", (e) => {
+    applyTheme(e.matches, view);
   });
 });
