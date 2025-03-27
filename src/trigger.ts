@@ -165,12 +165,11 @@ const triggerBaseTheme = EditorView.baseTheme({
     display: "flex",
     boxSizing: "border-box",
     padding: "4px 8px",
-    borderRadius: "4px",
+    borderRadius: "2px",
     fontSize: "12px",
     backgroundColor: "var(--accent-primary, var(--cm-accent))",
     color: "var(--foreground-on-accent, #ffffff)",
     border: "1px solid transparent",
-    boxShadow: "0 2px 4px rgba(0,0,0,0.15)",
     zIndex: "999",
     transition: "all 0.2s ease",
     "&[aria-hidden='true']": {

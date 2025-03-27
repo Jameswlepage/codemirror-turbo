@@ -1,6 +1,7 @@
 import { EditorView } from "@codemirror/view";
 import { StateEffect } from "@codemirror/state";
 import type { Extension } from "@codemirror/state";
+import { aiTheme } from "./ui.js";
 
 // Common styles for both themes
 const commonStyles = {
@@ -27,6 +28,29 @@ export const darkTheme = EditorView.theme({
   "&": {
     backgroundColor: "#1a1b26",
     color: "#a9b1d6",
+    "--cm-background": "#1a1b26",
+    "--cm-foreground": "#a9b1d6",
+    "--cm-selection": "#515c7e40",
+    "--cm-accent": "#3e57e1",
+    "--accent-primary": "#3e57e1",
+    "--cm-success": "#9ece6a",
+    "--cm-error": "#f7768e",
+    "--cm-foreground-muted": "#565f89",
+    "--cm-background-higher": "#292e42",
+    "--cm-border": "#292e42",
+    "--cm-border-hover": "#393e52",
+    "--background": "#1a1b26",
+    "--foreground": "#a9b1d6",
+    "--foreground-muted": "#565f89",
+    "--background-higher": "#292e42",
+    "--background-highest": "#393e52",
+    "--border": "#292e42",
+    "--border-hover": "#393e52",
+    "--success": "#9ece6a",
+    "--error": "#f7768e",
+    "--foreground-on-accent": "#ffffff",
+    "--foreground-on-success": "#ffffff",
+    "--foreground-on-error": "#ffffff",
   },
   ".cm-content": {
     caretColor: "#c0caf5",
@@ -60,6 +84,29 @@ export const lightTheme = EditorView.theme({
   "&": {
     backgroundColor: "#e1e2e7",
     color: "#343b58",
+    "--cm-background": "#e1e2e7",
+    "--cm-foreground": "#343b58",
+    "--cm-selection": "#b6bac940",
+    "--cm-accent": "#3e57e1",
+    "--accent-primary": "#3e57e1",
+    "--cm-success": "#587539",
+    "--cm-error": "#f52a65",
+    "--cm-foreground-muted": "#787b8099",
+    "--cm-background-higher": "#e9e9ec",
+    "--cm-border": "#e9e9ec",
+    "--cm-border-hover": "#d9d9dc",
+    "--background": "#e1e2e7",
+    "--foreground": "#343b58",
+    "--foreground-muted": "#787b8099",
+    "--background-higher": "#e9e9ec",
+    "--background-highest": "#d9d9dc",
+    "--border": "#e9e9ec",
+    "--border-hover": "#d9d9dc",
+    "--success": "#587539",
+    "--error": "#f52a65",
+    "--foreground-on-accent": "#ffffff",
+    "--foreground-on-success": "#ffffff",
+    "--foreground-on-error": "#ffffff",
   },
   ".cm-content": {
     caretColor: "#343b58",
@@ -87,31 +134,11 @@ export const lightTheme = EditorView.theme({
   },
 }, { dark: false });
 
-// CSS Variables for our AI plugin UI
-export const cssVariables = (isDark: boolean) => ({
-  "--cm-background": isDark ? "#1a1b26" : "#e1e2e7",
-  "--cm-foreground": isDark ? "#a9b1d6" : "#343b58",
-  "--cm-selection": isDark ? "#515c7e40" : "#b6bac940",
-  "--cm-accent": isDark ? "#7aa2f7" : "#2e7de9",
-  "--cm-success": isDark ? "#9ece6a" : "#587539",
-  "--cm-error": isDark ? "#f7768e" : "#f52a65",
-  "--cm-foreground-muted": isDark ? "#565f89" : "#787b8099",
-  "--cm-background-higher": isDark ? "#292e42" : "#e9e9ec",
-  "--cm-border": isDark ? "#292e42" : "#e9e9ec",
-  "--cm-border-hover": isDark ? "#393e52" : "#d9d9dc",
-});
-
 // Helper to apply theme and CSS variables
 export function applyTheme(isDark: boolean, view: EditorView): void {
   const theme = isDark ? darkTheme : lightTheme;
   view.dispatch({
-    effects: StateEffect.reconfigure.of([theme]),
-  });
-
-  // Apply CSS variables
-  const variables = cssVariables(isDark);
-  Object.entries(variables).forEach(([key, value]) => {
-    document.documentElement.style.setProperty(key, value);
+    effects: StateEffect.reconfigure.of([theme, aiTheme]),
   });
 }
 
@@ -119,12 +146,5 @@ export function applyTheme(isDark: boolean, view: EditorView): void {
 export function createInitialTheme(): Extension {
   const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
   const theme = isDark ? darkTheme : lightTheme;
-  
-  // Apply initial CSS variables
-  const variables = cssVariables(isDark);
-  Object.entries(variables).forEach(([key, value]) => {
-    document.documentElement.style.setProperty(key, value);
-  });
-  
-  return theme;
+  return [theme, aiTheme];
 } 
