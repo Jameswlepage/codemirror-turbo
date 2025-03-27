@@ -31,16 +31,25 @@ app.use(express.static(__dirname));
 // Get available models from Ollama
 async function getAvailableModels() {
   try {
+    console.log('Fetching models from Ollama...');
     const response = await fetch('http://localhost:11434/api/tags');
+    console.log('Ollama response status:', response.status);
+    
     if (!response.ok) {
-      throw new Error('Failed to fetch models from Ollama');
+      throw new Error(`Failed to fetch models from Ollama: ${response.status} ${response.statusText}`);
     }
+    
     const data = await response.json();
+    console.log('Ollama response data:', data);
+    
     // Extract model names from the response
-    return data.models?.map((model: any) => model.name) || [];
+    const models = data.models?.map((model: any) => model.name) || [];
+    console.log('Available models:', models);
+    
+    return models;
   } catch (error) {
     console.error('Error fetching models:', error);
-    return [];
+    throw error; // Re-throw to handle in the endpoint
   }
 }
 
@@ -61,14 +70,22 @@ async function checkOllama() {
 // Get available models from Ollama
 app.get('/api/models', async (req, res) => {
   try {
+    console.log('Received request for /api/models');
     const models = await getAvailableModels();
+    
     if (!models.length) {
+      console.warn('No models available from Ollama');
       throw new Error('No models available from Ollama');
     }
+    
+    console.log('Sending models to client:', models);
     res.json(models);
   } catch (error) {
-    console.error('Error fetching models:', error);
-    res.status(500).json({ error: 'Failed to fetch models' });
+    console.error('Error in /api/models endpoint:', error);
+    res.status(500).json({ 
+      error: error instanceof Error ? error.message : 'Failed to fetch models',
+      details: error instanceof Error ? error.stack : undefined
+    });
   }
 });
 

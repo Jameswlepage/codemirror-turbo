@@ -27,6 +27,7 @@ import { autocompletion, completionKeymap, closeBrackets, closeBracketsKeymap } 
 import { lintKeymap } from "@codemirror/lint";
 import { aiExtension } from "../src/inline-edit";
 import { aiAutocomplete } from "../src/autocomplete";
+import { tokyoNight, tokyoNightInit } from '@uiw/codemirror-theme-tokyo-night';
 
 const logger = console;
 
@@ -63,16 +64,16 @@ const basicSetup = [
 // Model selection UI
 function createModelSelector() {
   const container = document.createElement('div');
-  container.className = 'fixed top-4 right-4 bg-white p-2 rounded shadow flex flex-col gap-2';
+  container.className = 'fixed top-4 right-4 bg-[#1a1b26] p-4 rounded-lg shadow-lg border border-[#292e42] text-[#a9b1d6]';
   
   // Inline completion model selector
   const inlineCompletionContainer = document.createElement('div');
-  inlineCompletionContainer.className = 'flex flex-col';
+  inlineCompletionContainer.className = 'flex flex-col mb-4';
   const inlineCompletionLabel = document.createElement('label');
   inlineCompletionLabel.textContent = 'Inline Edit Model:';
-  inlineCompletionLabel.className = 'text-sm text-gray-600';
+  inlineCompletionLabel.className = 'text-sm opacity-80 mb-1';
   const inlineCompletionSelect = document.createElement('select');
-  inlineCompletionSelect.className = 'border rounded px-2 py-1';
+  inlineCompletionSelect.className = 'bg-[#1f2335] border border-[#292e42] rounded px-3 py-1.5 text-[#a9b1d6] focus:border-[#7aa2f7] focus:ring-1 focus:ring-[#7aa2f7] outline-none';
   inlineCompletionSelect.innerHTML = '<option value="">Loading models...</option>';
   inlineCompletionContainer.appendChild(inlineCompletionLabel);
   inlineCompletionContainer.appendChild(inlineCompletionSelect);
@@ -82,17 +83,29 @@ function createModelSelector() {
   autocompleteContainer.className = 'flex flex-col';
   const autocompleteLabel = document.createElement('label');
   autocompleteLabel.textContent = 'Autocomplete Model:';
-  autocompleteLabel.className = 'text-sm text-gray-600';
+  autocompleteLabel.className = 'text-sm opacity-80 mb-1';
   const autocompleteSelect = document.createElement('select');
-  autocompleteSelect.className = 'border rounded px-2 py-1';
+  autocompleteSelect.className = 'bg-[#1f2335] border border-[#292e42] rounded px-3 py-1.5 text-[#a9b1d6] focus:border-[#7aa2f7] focus:ring-1 focus:ring-[#7aa2f7] outline-none';
   autocompleteSelect.innerHTML = '<option value="">Loading models...</option>';
   autocompleteContainer.appendChild(autocompleteLabel);
   autocompleteContainer.appendChild(autocompleteSelect);
   
+  // Error message styling
+  const showError = (message: string) => {
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'fixed bottom-4 right-4 bg-[#1a1b26] border border-[#f7768e] text-[#f7768e] px-4 py-3 rounded-lg';
+    errorDiv.textContent = message;
+    document.body.appendChild(errorDiv);
+    setTimeout(() => errorDiv.remove(), 5000);
+  };
+  
   // Fetch available models
   fetch('/api/models')
-    .then(res => {
-      if (!res.ok) throw new Error('Failed to fetch models');
+    .then(async res => {
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || `Server responded with status ${res.status}`);
+      }
       return res.json();
     })
     .then(models => {
@@ -115,12 +128,7 @@ function createModelSelector() {
       console.error('Failed to fetch models:', err);
       inlineCompletionSelect.innerHTML = '<option value="">No models available</option>';
       autocompleteSelect.innerHTML = '<option value="">No models available</option>';
-      // Show error in UI
-      const errorDiv = document.createElement('div');
-      errorDiv.className = 'fixed bottom-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded';
-      errorDiv.textContent = 'Failed to load models. Make sure Ollama is running.';
-      document.body.appendChild(errorDiv);
-      setTimeout(() => errorDiv.remove(), 5000);
+      showError(`Failed to load models: ${err.message}. Make sure Ollama is running.`);
     });
   
   container.appendChild(inlineCompletionContainer);
@@ -181,6 +189,27 @@ document.addEventListener('DOMContentLoaded', () => {
     basicSetup,
     python(),
     javascript(),
+    tokyoNightInit({
+      settings: {
+        fontFamily: 'JetBrains Mono, monospace',
+        lineHighlight: '#292e42',
+      }
+    }),
+    EditorView.theme({
+      "&": {
+        fontSize: "14px",
+        height: "100%"
+      },
+      ".cm-content": {
+        padding: "1rem 0.5rem"
+      },
+      ".cm-gutters": {
+        borderRight: "1px solid #292e42"
+      },
+      ".cm-activeLineGutter": {
+        backgroundColor: "transparent"
+      }
+    }),
     aiExtension({
       prompt: async ({ prompt, selection, codeBefore, codeAfter }) => {
         logger.log("Generating completion for:", { prompt, selection, codeBefore, codeAfter });

@@ -36,7 +36,7 @@ export interface AiOptions {
  * Default keymap values
  */
 export const defaultKeymaps = {
-  showInput: "Mod-l",
+  showInput: "@",
   acceptEdit: "Mod-y",
   rejectEdit: "Mod-u",
 };
