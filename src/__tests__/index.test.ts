@@ -8,6 +8,7 @@ describe("index.ts exports", () => {
       [
         "acceptAiEdit",
         "acceptInlineCompletion",
+        "aiAutocomplete",
         "aiExtension",
         "aiTheme",
         "closeAiEditInput",
