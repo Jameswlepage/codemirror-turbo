@@ -111,7 +111,6 @@ export const aiTheme = EditorView.baseTheme({
   ".cm-line:has(.cm-new-code-line)": {
     backgroundColor: "color-mix(in srgb, var(--cm-success) 15%, var(--background, var(--cm-background))) !important",
     position: "relative",
-    padding: "2px 4px",
    
   },
   ".cm-new-code-line": {

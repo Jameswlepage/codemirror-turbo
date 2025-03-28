@@ -4,6 +4,26 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { aiAutocomplete } from "../autocomplete";
 import type { AutocompleteOptions } from "../autocomplete";
 
+/**
+ * Helper to simulate a keyboard event
+ */
+function dispatchKey(view: EditorView, key: string) {
+  view.focus();
+  const isCtrl = key.startsWith("Ctrl-");
+  const keyName = isCtrl ? key.slice(5) : key;
+  
+  // Simulate DOM event on the editor's content area
+  const event = new KeyboardEvent("keydown", {
+    key: keyName,
+    ctrlKey: isCtrl,
+    bubbles: true,
+    cancelable: true,
+    composed: true,
+    code: keyName === "Tab" ? "Tab" : keyName === "Escape" ? "Escape" : `Key${keyName.toUpperCase()}`
+  });
+  view.contentDOM.dispatchEvent(event);
+}
+
 describe("aiAutocomplete", () => {
   let view: EditorView;
   let mockPromptFn: ReturnType<typeof vi.fn>;
@@ -27,22 +47,31 @@ describe("aiAutocomplete", () => {
    * Helper that:
    * 1. Moves the selection to `anchor`
    * 2. Types `text` at that position
-   * 3. Flushes timers
-   * 4. And microtasks
+   * 3. Flushes timers and microtasks
+   * 4. Waits for suggestion to be set
    */
   async function typeAt(anchor: number, text: string) {
-    // Move cursor/selection
     view.dispatch({
       selection: { anchor },
     });
-    // Type the text
     view.dispatch({
       changes: { from: anchor, insert: text },
       userEvent: "input.type",
     });
-    // Allow debounced calls to queue
+    // Flush debounced calls and pending microtasks
     await vi.runAllTimersAsync();
-    // Flush microtasks in case 0ms debounce resolves on next tick
+    await Promise.resolve();
+    
+    // Wait for suggestion to be set
+    await vi.runAllTimersAsync();
+    await Promise.resolve();
+  }
+
+  /**
+   * Helper to wait for suggestion to be set in state
+   */
+  async function waitForSuggestion() {
+    await vi.runAllTimersAsync();
     await Promise.resolve();
   }
 
@@ -68,8 +97,7 @@ describe("aiAutocomplete", () => {
       }),
     ]);
 
-    // Start doc is "Hello world" => length=11
-    // Move selection to position 5, type one space => "Hello  world"
+    // "Hello world" has length=11. Move selection to position 5 and type a space.
     await typeAt(5, " ");
     expect(mockPromptFn).toHaveBeenCalledTimes(1);
   });
@@ -82,7 +110,7 @@ describe("aiAutocomplete", () => {
       }),
     ]);
 
-    // Move selection to pos=0, type a space => prefix.trim() is empty
+    // Move selection to position 0, type a space so that prefix.trim() is empty.
     await typeAt(0, " ");
     expect(mockPromptFn).not.toHaveBeenCalled();
   });
@@ -96,19 +124,16 @@ describe("aiAutocomplete", () => {
       }),
     ]);
 
-    // Type something at the end to trigger a suggestion
+    // Trigger a suggestion by typing "!" at the end of the document.
     await typeAt(11, "!");
     expect(mockPromptFn).toHaveBeenCalledTimes(1);
+    await waitForSuggestion();
 
     view.focus();
-    const tabEvent = new KeyboardEvent("keydown", {
-      key: "Tab",
-      bubbles: true,
-      cancelable: true,
-    });
-    view.dom.dispatchEvent(tabEvent);
+    dispatchKey(view, "Tab");
+    await waitForSuggestion();
 
-    // "ACCEPTED" should now appear in doc
+    // "ACCEPTED" should now have been inserted.
     expect(view.state.doc.toString()).toContain("ACCEPTED");
   });
 
@@ -123,16 +148,13 @@ describe("aiAutocomplete", () => {
 
     await typeAt(11, "?");
     expect(mockPromptFn).toHaveBeenCalledTimes(1);
+    await waitForSuggestion();
 
     view.focus();
-    const escEvent = new KeyboardEvent("keydown", {
-      key: "Escape",
-      bubbles: true,
-      cancelable: true,
-    });
-    view.dom.dispatchEvent(escEvent);
+    dispatchKey(view, "Escape");
+    await waitForSuggestion();
 
-    // doc stays "Hello world?"
+    // The document should remain unchanged.
     expect(view.state.doc.toString()).toBe("Hello world?");
   });
 
@@ -150,33 +172,34 @@ describe("aiAutocomplete", () => {
       }),
     ]);
 
-    // Type "!" => triggers callback suggestion
+    // Trigger a suggestion.
     await typeAt(11, "!");
     expect(mockPromptFn).toHaveBeenCalledTimes(1);
+    await waitForSuggestion();
 
-    // Accept
-    view.focus();
-    const tabEvent = new KeyboardEvent("keydown", {
-      key: "Tab",
-      bubbles: true,
-      cancelable: true,
-    });
-    view.dom.dispatchEvent(tabEvent);
-    expect(onAccept).toHaveBeenCalledWith("CALLBACK");
+    // Accept suggestion via Tab key.
+    dispatchKey(view, "Tab");
+    await waitForSuggestion();
+    expect(onAccept.mock.calls).toEqual([["CALLBACK"]]);
+    expect(onReject).not.toHaveBeenCalled();
 
-    // Another suggestion
+    // Reset mocks and wait for any pending state updates
+    onAccept.mockClear();
+    onReject.mockClear();
+    await vi.runAllTimersAsync();
+    await Promise.resolve();
+
+    // Prepare a new suggestion.
     mockPromptFn.mockResolvedValueOnce("NEW_SUGGESTION");
     await typeAt(view.state.doc.length, "X");
     expect(mockPromptFn).toHaveBeenCalledTimes(2);
+    await waitForSuggestion();
 
-    // Reject
-    const escEvent = new KeyboardEvent("keydown", {
-      key: "Escape",
-      bubbles: true,
-      cancelable: true,
-    });
-    view.dom.dispatchEvent(escEvent);
-    expect(onReject).toHaveBeenCalledWith("NEW_SUGGESTION");
+    // Reject suggestion via Escape key.
+    dispatchKey(view, "Escape");
+    await waitForSuggestion();
+    expect(onReject.mock.calls).toEqual([["NEW_SUGGESTION"]]);
+    expect(onAccept).not.toHaveBeenCalled();
   });
 
   it("does not fetch suggestions when enableAutocomplete is false", async () => {
@@ -188,7 +211,6 @@ describe("aiAutocomplete", () => {
       }),
     ]);
 
-    // Should skip the fetch
     await typeAt(11, "X");
     expect(mockPromptFn).not.toHaveBeenCalled();
   });
@@ -206,34 +228,26 @@ describe("aiAutocomplete", () => {
       }),
     ]);
 
-    // Type at end => doc "Hello worldA"
+    // Trigger a suggestion by typing "A" at the end.
     await typeAt(11, "A");
     expect(mockPromptFn).toHaveBeenCalledTimes(1);
+    await waitForSuggestion();
 
     view.focus();
-    // Press Ctrl-j => accept
-    const ctrlJEvent = new KeyboardEvent("keydown", {
-      key: "j",
-      ctrlKey: true,
-      bubbles: true,
-      cancelable: true,
-    });
-    view.dom.dispatchEvent(ctrlJEvent);
+    // Simulate Ctrl-j to accept suggestion.
+    dispatchKey(view, "Ctrl-j");
+    await waitForSuggestion();
     expect(view.state.doc.toString()).toContain("CUSTOM");
 
-    // Next suggestion
+    // Prepare another suggestion.
     mockPromptFn.mockResolvedValue("NEW_CUSTOM");
     await typeAt(view.state.doc.length, "B");
     expect(mockPromptFn).toHaveBeenCalledTimes(2);
+    await waitForSuggestion();
 
-    // Press Ctrl-k => reject
-    const ctrlKEvent = new KeyboardEvent("keydown", {
-      key: "k",
-      ctrlKey: true,
-      bubbles: true,
-      cancelable: true,
-    });
-    view.dom.dispatchEvent(ctrlKEvent);
+    // Simulate Ctrl-k to reject the suggestion.
+    dispatchKey(view, "Ctrl-k");
+    await waitForSuggestion();
     expect(view.state.doc.toString()).not.toContain("NEW_CUSTOM");
   });
 
@@ -248,7 +262,6 @@ describe("aiAutocomplete", () => {
       }),
     ]);
 
-    // Type something => triggers prompt
     await typeAt(11, "R");
     expect(onError).toHaveBeenCalled();
     expect((onError.mock.calls[0][0] as Error).message).toBe("Test error");
@@ -262,13 +275,12 @@ describe("aiAutocomplete", () => {
       }),
     ]);
 
-    // Move selection => type "1"
+    // Simulate multiple rapid inputs.
     view.dispatch({ selection: { anchor: 11 } });
     view.dispatch({
       changes: { from: 11, insert: "1" },
       userEvent: "input.type",
     });
-    // next typed changes
     view.dispatch({
       changes: { from: 12, insert: "2" },
       userEvent: "input.type",
@@ -278,16 +290,16 @@ describe("aiAutocomplete", () => {
       userEvent: "input.type",
     });
 
-    // No immediate fetch
+    // No immediate fetch should occur.
     expect(mockPromptFn).toHaveBeenCalledTimes(0);
 
-    // Wait 499 ms => still no fetch
+    // Advance timers to just before the debounce threshold.
     vi.advanceTimersByTime(499);
     expect(mockPromptFn).toHaveBeenCalledTimes(0);
 
-    // 1 more ms => total 500 => fetch triggered
+    // Advance timers to trigger the debounce.
     vi.advanceTimersByTime(1);
-    await Promise.resolve(); // flush microtask if needed
+    await Promise.resolve();
     expect(mockPromptFn).toHaveBeenCalledTimes(1);
   });
 });

@@ -114,16 +114,14 @@ app.post('/api/complete', async (req, res) => {
       throw new Error(`Invalid model. Available models: ${availableModels.join(', ')}`);
     }
     
-    // Detect language from the code context
-    const language = detectLanguage(selection, codeBefore, codeAfter);
-    
-    const systemPrompt = `You are a helpful programming assistant specializing in ${language} development.
-Your task is to modify code based on user requests.
+    // Create a language-agnostic system prompt
+    const systemPrompt = `You are a helpful programming assistant.
+Your task is to modify or complete code based on user requests.
 You should ONLY return the modified code, with no explanations or markdown formatting.
 Maintain the same style and indentation as the surrounding code.
-Follow ${language} best practices and conventions.`;
+Follow best practices and conventions evident in the code context.`;
 
-    const userPrompt = `Given the following ${language} code context, ${prompt}
+    const userPrompt = `Given the following code context, ${prompt}
 
 SELECTED CODE:
 ${selection}
@@ -139,7 +137,7 @@ Instructions:
 2. Maintain consistent style with surrounding code
 3. Ensure the edit is complete and can be inserted directly
 4. Return ONLY the replacement code, no explanations
-5. Follow ${language} best practices`;
+5. Follow established code patterns visible in the context`;
 
     const response = await fetch('http://localhost:11434/v1/chat/completions', {
       method: 'POST',
@@ -172,20 +170,6 @@ Instructions:
     });
   }
 });
-
-// Helper function to detect programming language
-function detectLanguage(selection: string, codeBefore: string, codeAfter: string): string {
-  const code = `${codeBefore}\n${selection}\n${codeAfter}`;
-  
-  // Simple language detection based on code patterns
-  if (code.includes('def ') || code.includes('class ') || code.includes('import ')) {
-    return 'Python';
-  }
-  if (code.includes('function ') || code.includes('const ') || code.includes('let ')) {
-    return 'JavaScript';
-  }
-  return 'Python'; // Default to Python if detection fails
-}
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
